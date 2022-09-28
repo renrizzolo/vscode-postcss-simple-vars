@@ -163,7 +163,9 @@ const PREFIX = '^(rgb|hsl)(a?)\\s*\\(';
 const VALUE = '\\s*([-+]?\\d+%?)\\s*';
 const ALPHA = '(?:,\\s*([-+]?(?:(?:\\d+(?:.\\d+)?)|(?:.\\d+))\\s*))?';
 const SUFFIX = '\\)$';
-const RGB_HSL_PATTERN = new RegExp(PREFIX + VALUE + ',' + VALUE + ',' + VALUE + ALPHA + SUFFIX);
+const RGB_HSL_PATTERN = new RegExp(
+  PREFIX + VALUE + ',' + VALUE + ',' + VALUE + ALPHA + SUFFIX
+);
 
 const NUM_TYPE = 1;
 const PERCENTAGE_TYPE = 2;
@@ -174,19 +176,19 @@ const isColor = (str: string) => {
     return token.indexOf('%') !== -1 ? PERCENTAGE_TYPE : NUM_TYPE;
   }
 
-  if(!str || typeof str !== 'string') {
+  if (!str || typeof str !== 'string') {
     return false;
   }
 
   const color = str.replace(/^\s+|\s+$/g, '').toLocaleLowerCase();
 
   // named colors or hex code
-  if((CSS_COLOR_NAMES.indexOf(color) !== -1) || HEX_PATTERN.test(color)) {
+  if (CSS_COLOR_NAMES.indexOf(color) !== -1 || HEX_PATTERN.test(color)) {
     return true;
   }
 
   const result = color.match(RGB_HSL_PATTERN);
-  if(result) {
+  if (result) {
     const flavor = result[1];
     const alpha = result[2];
     const rh = result[3];
@@ -195,20 +197,22 @@ const isColor = (str: string) => {
     const a = result[6];
 
     // alpha test
-    if((alpha === 'a' && !a) || (a && alpha === '')) {
+    if ((alpha === 'a' && !a) || (a && alpha === '')) {
       return false;
     }
 
     // hsl
-    if(flavor === 'hsl') {
-      if(getColorType(rh) !== NUM_TYPE) {
+    if (flavor === 'hsl') {
+      if (getColorType(rh) !== NUM_TYPE) {
         return false;
       }
       return (getColorType(gs) & getColorType(bl)) === PERCENTAGE_TYPE;
     }
 
     // rgb
-    return (getColorType(rh) & getColorType(gs) & getColorType(bl)) !== ERROR_TYPE;
+    return (
+      (getColorType(rh) & getColorType(gs) & getColorType(bl)) !== ERROR_TYPE
+    );
   }
 
   return false;

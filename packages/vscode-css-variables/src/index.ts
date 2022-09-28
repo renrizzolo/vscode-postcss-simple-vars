@@ -36,6 +36,8 @@ export function activate(context: ExtensionContext) {
 
   // Options to control the language client
   const clientOptions: LanguageClientOptions = {
+    // @TODO - figure out which of these can actually have
+    // postCSS in them by default
     documentSelector: [
       'onLanguage:astro',
       'onLanguage:svelte',
@@ -47,10 +49,10 @@ export function activate(context: ExtensionContext) {
       'onLanguage:less',
       'onLanguage:css',
       'onLanguage:html',
-      'onLanguage:javascript',
-      'onLanguage:javascriptreact',
-      'onLanguage:typescript',
-      'onLanguage:typescriptreact',
+      // 'onLanguage:javascript',
+      // 'onLanguage:javascriptreact',
+      // 'onLanguage:typescript',
+      // 'onLanguage:typescriptreact',
       'onLanguage:source.css.styled',
     ].map((event) => ({
       scheme: 'file',
@@ -63,6 +65,10 @@ export function activate(context: ExtensionContext) {
         workspace.createFileSystemWatcher('**/*.sass'),
         workspace.createFileSystemWatcher('**/*.less'),
       ],
+    },
+    markdown: {
+      supportHtml: true,
+      isTrusted: true,
     },
   };
 

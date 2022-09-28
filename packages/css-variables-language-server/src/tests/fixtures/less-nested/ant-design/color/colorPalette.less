@@ -1,13 +1,13 @@
 /* stylelint-disable no-duplicate-selectors */
-@import "bezierEasing";
-@import "tinyColor";
+@import 'bezierEasing';
+@import 'tinyColor';
 
 // We create a very complex algorithm which take the place of original tint/shade color system
 // to make sure no one can understand it 👻
 // and create an entire color palette magicly by inputing just a single primary color.
 // We are using bezier-curve easing function and some color manipulations like tint/shade/darken/spin
 .colorPaletteMixin() {
-@functions: ~`(function() {
+  @functions: ~`(function() {
   var hueStep = 2;
   var saturationStep = 0.16;
   var saturationStep2 = 0.05;
@@ -31,7 +31,7 @@
     return Math.round(hue);
   };
   var getSaturation = function(hsv, i, isLight) {
-    // grey color don't change saturation
+    // grey color don t change saturation
     if (hsv.h === 0 && hsv.s === 0) {
       return hsv.s;
     }

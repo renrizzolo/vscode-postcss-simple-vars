@@ -7,9 +7,13 @@
       "request": "launch",
       "name": "Launch Client",
       "runtimeExecutable": "${execPath}",
-      "args": ["--extensionDevelopmentPath=${workspaceRoot}/packages/vscode-css-variables"],
+      "args": [
+        "--extensionDevelopmentPath=${workspaceRoot}/packages/vscode-css-variables"
+      ],
       "sourceMaps": true,
-      "outFiles": ["${workspaceRoot}/packages/vscode-css-variables/dist/**/*.js"],
+      "outFiles": [
+        "${workspaceRoot}/packages/vscode-css-variables/dist/**/*.js"
+      ],
       "preLaunchTask": "npm: build"
     },
     {
@@ -19,7 +23,9 @@
       "address": "localhost",
       "port": 6011,
       "sourceMaps": true,
-      "outFiles": ["${workspaceRoot}/packages/vscode-css-variables/dist/**/*.js"]
+      "outFiles": [
+        "${workspaceRoot}/packages/vscode-css-variables/dist/**/*.js"
+      ]
     },
     {
       "type": "node",
@@ -28,7 +34,9 @@
       "address": "localhost",
       "port": 6012,
       "sourceMaps": true,
-      "outFiles": ["${workspaceRoot}/packages/vscode-css-variables/dist/**/*.js"]
+      "outFiles": [
+        "${workspaceRoot}/packages/vscode-css-variables/dist/**/*.js"
+      ]
     }
   ]
 }

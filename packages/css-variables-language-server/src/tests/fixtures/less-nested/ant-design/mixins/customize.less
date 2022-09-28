@@ -17,7 +17,8 @@
   @calendar-picker-prefix-cls: ~'@{prefix}-picker';
   @table-prefix-cls: ~'@{prefix}-table';
 
-  @popover-border: @border-width-base @border-style-base @popover-customize-border-color;
+  @popover-border: @border-width-base @border-style-base
+    @popover-customize-border-color;
 
   .@{containerClass} {
     .@{picker-prefix-cls}-clear,
@@ -35,7 +36,9 @@
           background: @background;
           border-bottom: @popover-border;
         }
-        &-content-item:not(.@{transfer-prefix-cls}-list-content-item-disabled):hover {
+        &-content-item:not(
+            .@{transfer-prefix-cls}-list-content-item-disabled
+          ):hover {
           background-color: @item-hover-bg;
         }
       }
@@ -121,7 +124,8 @@
         table > {
           thead {
             > tr:not(:last-child) > th {
-              border-bottom: @border-width-base @border-style-base @border-color-split;
+              border-bottom: @border-width-base @border-style-base
+                @border-color-split;
             }
           }
         }
@@ -158,7 +162,9 @@
     }
 
     .@{tab-prefix-cls} {
-      &.@{tab-prefix-cls}-card .@{tab-prefix-cls}-card-bar .@{tab-prefix-cls}-tab-active {
+      &.@{tab-prefix-cls}-card
+        .@{tab-prefix-cls}-card-bar
+        .@{tab-prefix-cls}-tab-active {
         background-color: @background;
         border-bottom: @border-width-base solid @background;
       }

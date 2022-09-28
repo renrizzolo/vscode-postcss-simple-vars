@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import fastGlob from 'fast-glob';
 import * as culori from 'culori';
 import axios from 'axios';
-import postcss from 'postcss';
+import postcss, { Declaration } from 'postcss';
 import { pathToFileURL } from 'url';
 import path from 'path';
 import postcssSCSS from 'postcss-scss';
@@ -11,21 +11,25 @@ import postcssLESS from 'postcss-less';
 import CacheManager from './CacheManager';
 import isColor from './utils/isColor';
 import { culoriColorToVscodeColor } from './utils/culoriColorToVscodeColor';
+import { VARIABLE_PREFIX } from './constants';
 
 export type CSSSymbol = {
-  name: string
-  value: string
-}
+  name: string;
+  value: string;
+  referenceValue?: string;
+  referenceColor?: string;
+};
 
 export type CSSVariable = {
-  symbol: CSSSymbol
-  definition: Location
-  color?: Color
-}
+  symbol: CSSSymbol;
+  definition: Location;
+  color?: Color;
+  var?: string;
+};
 
 export interface CSSVariablesSettings {
-  lookupFiles: string[]
-  blacklistFolders: string[]
+  lookupFiles: string[];
+  blacklistFolders: string[];
 }
 
 // The global settings, used when the `workspace/configuration` request is not supported by the client.
@@ -34,12 +38,14 @@ export interface CSSVariablesSettings {
 export const defaultSettings: CSSVariablesSettings = {
   lookupFiles: ['**/*.less', '**/*.scss', '**/*.sass', '**/*.css'],
   blacklistFolders: [
+    '**/.next',
+    '**/.cache',
     '**/.git',
     '**/.svn',
     '**/.hg',
     '**/CVS',
     '**/.DS_Store',
-    '**/node_modules',
+    '**/node_modules/',
     '**/bower_components',
     '**/tmp',
     '**/dist',
@@ -53,7 +59,7 @@ const getAST = (filePath: string, content: string) => {
   if (fileExtension === '.less') {
     return postcssLESS.parse(content);
   }
-  
+
   if (fileExtension === '.scss') {
     return postcssSCSS.parse(content);
   }
@@ -68,8 +74,8 @@ export default class CSSVariableManager {
     content,
     filePath,
   }: {
-    content: string
-    filePath: string
+    content: string;
+    filePath: string;
   }) => {
     try {
       // reset cache for this file
@@ -114,7 +120,7 @@ export default class CSSVariableManager {
       );
 
       ast.walkDecls((decl) => {
-        if (decl.prop.startsWith('--')) {
+        if (decl.prop.startsWith(VARIABLE_PREFIX)) {
           const variable: CSSVariable = {
             symbol: {
               name: decl.prop,
@@ -135,11 +141,38 @@ export default class CSSVariableManager {
             },
           };
 
+          // if (decl.value.startsWith(VARIABLE_PREFIX)) {
+          //   variable.var = decl.value;
+          //   console.log('set var', decl.prop, decl.value);
+          //   const def = this.cacheManager.get(decl.value);
+          //   if (def.color) {
+          //     console.log('got var', decl.prop, decl.value, def);
+          //     // if (isColor(def.value)) {
+          //     console.log('is color');
+          //     variable.color = def.color; //this.getColor(def);
+          //     // }
+          //   }
+          // }
+
+          // variable.color = this.recursiveApplyColor(decl);
+
           if (isColor(decl.value)) {
-            const culoriColor = culori.parse(decl.value);
-            if (culoriColor) {
-              variable.color = culoriColorToVscodeColor(culoriColor);
-            }
+            variable.color = this.getColor(decl);
+          } else {
+            // if a variable references another variable
+            // attempt to add its color
+            // referenceColor is used to apply the actual color to the completion item
+            // referenceValue is the parent value (could be another variable, hence referenceColor)
+            // This is order dependent!
+            // i.e this won't show brown for $var2:
+            // $var1: $var2;
+            // $var2: brown;
+            const { referenceValue, referenceColor, color } =
+              this.recursiveApplyValues(variable);
+
+            if (referenceValue) variable.symbol.referenceValue = referenceValue;
+            if (color) variable.color = color;
+            if (referenceColor) variable.symbol.referenceColor = referenceColor;
           }
 
           // add to cache
@@ -147,8 +180,41 @@ export default class CSSVariableManager {
         }
       });
     } catch (error) {
+      console.log({ error });
       console.error(filePath);
     }
+  };
+
+  getColor = (decl: Declaration) => {
+    const culoriColor = culori.parse(decl.value);
+    if (culoriColor) {
+      return culoriColorToVscodeColor(culoriColor);
+    }
+  };
+
+  recursiveApplyValues = (dec: CSSVariable, level = 0) => {
+    if (level > 5) return {};
+    if (dec.symbol.value.startsWith(VARIABLE_PREFIX)) {
+      const ref = this.cacheManager.get(dec.symbol.value);
+
+      if (!ref) return {};
+      if (ref.color) {
+        let referenceColor = ref.symbol.value;
+        if (!isColor(referenceColor)) {
+          referenceColor = this.recursiveApplyValues(ref, level + 1)
+            ?.referenceColor;
+        }
+        return {
+          color: ref.color,
+          referenceValue: ref.symbol.value,
+          referenceColor,
+        };
+      }
+      return this.recursiveApplyValues(ref, level + 1);
+    } else if (level > 0) {
+      return { referenceValue: dec.symbol.value };
+    }
+    return {};
   };
 
   public parseAndSyncVariables = async (

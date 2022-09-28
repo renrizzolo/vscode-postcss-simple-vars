@@ -1,7 +1,7 @@
-/* --------------------------------------------------------------------------------------------
+/*
  * Copyright (c) Vu Nguyen. All rights reserved.
  * Licensed under the MIT License. See License.txt in the project root for license information.
- * ------------------------------------------------------------------------------------------ */
+ *  */
 
 import * as vscode from 'vscode';
 import * as path from 'path';
@@ -15,14 +15,15 @@ export async function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-export const getDocPath = (p: string) => path.resolve(__dirname, '../../testFixture', p);
+export const getDocPath = (p: string) =>
+  path.resolve(__dirname, '../../testFixture', p);
 
 export const getDocUri = (p: string) => vscode.Uri.file(getDocPath(p));
 
 export async function activate(docUri: vscode.Uri) {
   // The extensionId is `publisher.name` from package.json
   const ext = vscode.extensions.getExtension(
-    'vunguyentuan.vscode-css-variables',
+    'renrizzolo.vscode-postcss-simple-variables'
   )!;
   await ext.activate();
   try {
@@ -38,7 +39,7 @@ export async function activate(docUri: vscode.Uri) {
 export async function setTestContent(content: string): Promise<void> {
   const all = new vscode.Range(
     doc.positionAt(0),
-    doc.positionAt(doc.getText().length),
+    doc.positionAt(doc.getText().length)
   );
 
   await editor.edit((eb) => eb.replace(all, content));
@@ -50,7 +51,7 @@ export async function setTestContent(content: string): Promise<void> {
 
 export function positionOf(
   searchText: string,
-  doc?: vscode.TextDocument,
+  doc?: vscode.TextDocument
 ): vscode.Position {
   // Normalise search text to match the document, since our literal template
   // strings in tests end up compiled as only \n on Windows even thouh the
@@ -60,7 +61,7 @@ export function positionOf(
   assert.notStrictEqual(
     caretOffset,
     -1,
-    `Couldn't find a ^ in search text (${searchText})`,
+    `Couldn't find a ^ in search text (${searchText})`
   );
   doc ??= vscode.window.activeTextEditor.document;
   const docText = doc.getText();
@@ -70,8 +71,8 @@ export function positionOf(
     -1,
     `Couldn't find string ${searchText.replace(
       '^',
-      '',
-    )} in the document to get position of. Document contained:\n${docText}`,
+      ''
+    )} in the document to get position of. Document contained:\n${docText}`
   );
 
   return doc.positionAt(matchedTextIndex + caretOffset);

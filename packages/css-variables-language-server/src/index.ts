@@ -12,6 +12,8 @@ import {
   ColorInformation,
   FileChangeType,
   Hover,
+  InsertReplaceEdit,
+  MarkupKind,
 } from 'vscode-languageserver/node';
 import * as fs from 'fs';
 import { Position, TextDocument } from 'vscode-languageserver-textdocument';
@@ -19,9 +21,14 @@ import isColor from './utils/isColor';
 import { uriToPath } from './utils/protocol';
 import { findAll } from './utils/findAll';
 import { indexToPosition } from './utils/indexToPosition';
-import { getCurrentWord } from './utils/getCurrentWord';
-import { isInFunctionExpression } from './utils/isInFunctionExpression';
-import CSSVariableManager, { CSSVariablesSettings, defaultSettings } from './CSSVariableManager';
+import { getCurrentWord, getWordRange } from './utils/getCurrentWord';
+import CSSVariableManager, {
+  CSSVariable,
+  CSSVariablesSettings,
+  defaultSettings,
+} from './CSSVariableManager';
+import { VARIABLE_PREFIX } from './constants';
+import { vscodeColorToHex } from './utils/culoriColorToVscodeColor';
 
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
@@ -114,10 +121,11 @@ connection.onDidChangeConfiguration(async (change) => {
 
     const validFolders = await connection.workspace
       .getWorkspaceFolders()
-      .then((folders) =>
-        folders
-          ?.map((folder) => uriToPath(folder.uri) || '')
-          .filter((path) => !!path)
+      .then(
+        (folders) =>
+          folders
+            ?.map((folder) => uriToPath(folder.uri) || '')
+            .filter((path) => !!path)
       );
 
     const settings = await getDocumentSettings();
@@ -178,30 +186,32 @@ connection.onCompletion(
     }
 
     const offset = doc.offsetAt(_textDocumentPosition.position);
-    const currentWord = getCurrentWord(doc, offset);
 
-    const isFunctionCall = isInFunctionExpression(currentWord);
-
+    const range = getWordRange(doc, offset);
+    connection.console.log(JSON.stringify(range));
     const items: CompletionItem[] = [];
     cssVariableManager.getAll().forEach((variable) => {
       const varSymbol = variable.symbol;
-      const insertText = isFunctionCall
-        ? varSymbol.name
-        : `var(${varSymbol.name})`;
+      const insertText = varSymbol.name;
       const completion: CompletionItem = {
         label: varSymbol.name,
-        detail: varSymbol.value,
-        documentation: varSymbol.value,
-        insertText,
-        kind: isColor(varSymbol.value)
-          ? CompletionItemKind.Color
-          : CompletionItemKind.Variable,
+        detail: varSymbol.value + displayReferenceValue(varSymbol),
+        documentation: isColor(varSymbol.referenceColor)
+          ? varSymbol.referenceColor
+          : varSymbol.value,
+        // insertText: currentWord.trim().startsWith(VARIABLE_PREFIX)
+        //   ? insertText.slice(1)
+        //   : insertText,
+        textEdit: {
+          newText: insertText,
+          range,
+        },
+        kind:
+          isColor(varSymbol.value) || isColor(varSymbol.referenceColor)
+            ? CompletionItemKind.Color
+            : CompletionItemKind.Variable,
         sortText: 'z',
       };
-
-      if (isFunctionCall) {
-        completion.detail = varSymbol.value;
-      }
 
       items.push(completion);
     });
@@ -209,6 +219,8 @@ connection.onCompletion(
     return items;
   }
 );
+const displayReferenceValue = (varSymbol: CSSVariable['symbol']) =>
+  `${varSymbol.referenceValue ? ` (${varSymbol.referenceValue})` : ''}`;
 
 // This handler resolves additional information for the item selected in
 // the completion list.
@@ -225,12 +237,12 @@ connection.onDocumentColor((params): ColorInformation[] => {
   const colors: ColorInformation[] = [];
 
   const text = document.getText();
-  const matches = findAll(/var\((?<varName>--[a-z-0-9]+)/g, text);
+  const matches = findAll(/\$(?<varName>[a-z-0-9]+)/g, text);
 
   const globalStart: Position = { line: 0, character: 0 };
 
   matches.map((match) => {
-    const start = indexToPosition(text, match.index + 4);
+    const start = indexToPosition(text, match.index + 1);
     const end = indexToPosition(text, match.index + match[0].length);
 
     const cssVariable = cssVariableManager.getAll().get(match.groups.varName);
@@ -267,7 +279,7 @@ connection.onHover((params) => {
   }
 
   const offset = doc.offsetAt(params.position);
-  const currentWord = getCurrentWord(doc, offset);
+  const currentWord = VARIABLE_PREFIX + getCurrentWord(doc, offset);
 
   if (!currentWord) return null;
 
@@ -276,8 +288,27 @@ connection.onHover((params) => {
   const cssVariable = cssVariableManager.getAll().get(nornalizedWord);
 
   if (cssVariable) {
+    const content = {
+      kind: MarkupKind.Markdown,
+      value: [
+        // add color swatch to hover if it exists
+        `${
+          cssVariable.color
+            ? `<span style="background-color:${vscodeColorToHex(
+                cssVariable.color
+                // setting width is not allowed by vscode
+              )};">\xA0\xA0\xA0\xA0</span>`
+            : ''
+        } ${cssVariable.symbol.value} ${displayReferenceValue(
+          cssVariable.symbol
+        )}  `,
+      ]
+        .filter(Boolean)
+        .join('\n'),
+    };
+
     return {
-      contents: cssVariable.symbol.value,
+      contents: content,
       range: cssVariable.definition.range,
     } as Hover;
   }
@@ -304,7 +335,7 @@ connection.onDefinition((params) => {
   }
 
   const offset = doc.offsetAt(params.position);
-  const currentWord = getCurrentWord(doc, offset);
+  const currentWord = VARIABLE_PREFIX + getCurrentWord(doc, offset);
 
   if (!currentWord) return null;
 

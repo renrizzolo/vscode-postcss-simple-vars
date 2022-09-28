@@ -1,6 +1,5 @@
-:root {
-  --chakra-ring-offset-width: 0px;
-  --chakra-ring-color: rgba(66, 153, 225, 0.6);
-  --chakra-space-x-reverse: 0;
-  --chakra-fontSizes-md: 1rem;
-}
+$chakra-ring-offset-width: 0px;
+$chakra-ring-color: rgba(66, 153, 225, 0.6);
+$chakra-space-x-reverse: 0;
+$chakra-fontSizes-md: 1rem;
+$text-md: $chakra-fontSizes-md;

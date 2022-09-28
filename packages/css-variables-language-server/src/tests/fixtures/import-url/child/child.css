@@ -1,11 +1,11 @@
 :root {
   --child-main-bg-color: brown;
-	--child-h1: 26px;
-	--child-h2: 22px;
-	--child-h3: 18px;
-	--child-text-base: 16px;
-	/* --text-base: 14px; */
-	--child-carousel-bg: var(--main-bg-color);
+  --child-h1: 26px;
+  --child-h2: 22px;
+  --child-h3: 18px;
+  --child-text-base: 16px;
+  /* --text-base: 14px; */
+  --child-carousel-bg: var(--main-bg-color);
 }
 
 .one {
